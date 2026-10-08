@@ -1,0 +1,10 @@
+[package]
+name = "lmxml"
+version = "0.1.0"
+edition = "2021"
+description = "Language Model XML serialization format for Rust"
+license = "MIT"
+readme = "../README.md"
+
+[dependencies]
+lmxml-derive = { path = "../lmxml-derive", version = "0.1.0" }

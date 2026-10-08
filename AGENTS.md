@@ -29,6 +29,7 @@ Reimplementation of [lmxml](https://github.com/filipmalczak/lmxml) python packag
   * An entry may be superseded by more than one entry; record all follow-ups in the superseded entry's top comment.
 * Put longer-lived implementation/project knowledge that is not an architectural decision in `./knowledge/`.
 * Do not use `decisions/` or `knowledge/` for temporary notes, scratch work, or investigation debris.
+* DO NOT read from `backlog.md` - this file is purely developer-oriented and should not be considered by agents at all
 
 ## Planning Agents
 

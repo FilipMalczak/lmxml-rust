@@ -1,0 +1,3 @@
+- confirm that boxes, (a)rc and friends are well-handled
+- add `impl LMXMLSerializable for serde::...::Serializable`
+- publish the crate
