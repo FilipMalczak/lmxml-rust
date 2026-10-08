@@ -1,0 +1,6 @@
+[workspace]
+members = [
+    "lmxml",
+    "lmxml-derive",
+]
+resolver = "2"
