@@ -1,0 +1,63 @@
+name: Publish Crates
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: 1
+
+jobs:
+  validate-and-publish:
+    name: Validate and Publish to Crates.io
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Run verification checks
+        run: |
+          cargo fmt --all --check
+          cargo clippy --all-targets --all-features -- -D warnings
+          cargo test --all-targets --all-features
+
+      - name: Publish lmxml-derive
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+        run: |
+          echo "Publishing lmxml-derive..."
+          cargo publish --package lmxml-derive --token "$CARGO_REGISTRY_TOKEN"
+
+      - name: Wait for lmxml-derive index propagation
+        run: |
+          echo "Waiting for crates.io index propagation..."
+          VERSION=$(cargo metadata --format-version 1 --no-deps | jq -r '.packages[] | select(.name == "lmxml-derive") | .version')
+          echo "Target lmxml-derive version: $VERSION"
+          
+          # Poll crates.io API until the newly published version appears
+          for i in {1..24}; do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" "https://crates.io/api/v1/crates/lmxml-derive/$VERSION" || true)
+            if [ "$STATUS" -eq 200 ]; then
+              echo "lmxml-derive $VERSION is available on crates.io!"
+              break
+            fi
+            echo "Attempt $i/24: HTTP $STATUS. Waiting 5s for propagation..."
+            sleep 5
+          done
+          # Additional buffer for CDN and sparse index sync
+          sleep 10
+
+      - name: Publish lmxml
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+        run: |
+          echo "Publishing lmxml..."
+          cargo publish --package lmxml --token "$CARGO_REGISTRY_TOKEN"

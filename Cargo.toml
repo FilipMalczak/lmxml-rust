@@ -4,3 +4,14 @@ members = [
     "lmxml-derive",
 ]
 resolver = "2"
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+authors = ["Filip Malczak <filip.malczak@gmail.com>"]
+license = "MIT"
+repository = "https://github.com/filipmalczak/lmxml-rust"
+homepage = "https://github.com/filipmalczak/lmxml-rust"
+readme = "README.md"
+keywords = ["xml", "llm", "prompt", "serialization", "lmxml"]
+categories = ["encoding", "text-processing"]

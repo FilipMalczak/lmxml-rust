@@ -1,9 +1,16 @@
 [package]
 name = "lmxml-derive"
-version = "0.1.0"
-edition = "2021"
-description = "Derive macro for LMXMLSerializable"
-license = "MIT"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+keywords.workspace = true
+categories.workspace = true
+description = "Derive macro for LMXMLSerializable in lmxml"
+documentation = "https://docs.rs/lmxml-derive"
+readme = "README.md"
 
 [lib]
 proc-macro = true
