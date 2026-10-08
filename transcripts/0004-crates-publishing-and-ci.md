@@ -34,3 +34,13 @@ Commit and push (this time youre allowed to push feature branch, we're testing i
 
 ## Agent
 Updated CI workflow triggers to run on every commit push, staged all changes, committed the task artifacts and implementation, and pushed feature branch `0004-crates-publishing-and-ci` to remote origin.
+
+======
+
+## User
+Merge to master. Then, tag as v0.1.0; generate changelog for this initial version
+
+======
+
+## Agent
+Merged feature branch `0004-crates-publishing-and-ci` into `master`, generated `CHANGELOG.md` for initial release `v0.1.0`, committed `CHANGELOG.md` to `master`, and created annotated release tag `v0.1.0`.
