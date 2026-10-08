@@ -27,3 +27,9 @@ The `lmxml-rust` workspace provides an idiomatic Rust reimplementation of Python
    - `#[lmxml(rename = "custom")]`: Renames the XML tag corresponding to a field.
    - `#[lmxml(skip)]`: Completely excludes a field from serialization.
    - `#[lmxml(skip_none)]`: Omits an `Option<T>` field if it is `None`, instead of emitting `<field>None</field>`.
+
+4. **Transparent Wrappers, Monads, and Borrows:**
+   - Smart pointers (`Box`, `Rc`, `Arc`), references (`&T`, `&&T`, `&mut T`), and monads (`Option`, `Result`) are transparent to serialization.
+   - Wrapping a value in any indirection produces identical XML to the value itself across all contexts (top-level, struct fields, list items, maps).
+   - `Result<T, E>` provides full value transparency: `Ok(val)` serializes as `val`, `Err(err)` serializes as `err`.
+
