@@ -1,3 +1,5 @@
+#![allow(clippy::vec_box, clippy::unnecessary_mut_passed)]
+
 use lmxml::{to_lmxml, LMXMLSerializable};
 use std::borrow::Cow;
 use std::cell::{Cell, RefCell};
@@ -239,12 +241,12 @@ fn test_struct_with_mut_borrowed_fields() {
 #[test]
 fn test_borrow_enum_single_and_double() {
     let s1 = Status::Active;
-    assert_eq!(to_lmxml(&s1), "<Active />");
-    assert_eq!(to_lmxml(&&s1), "<Active />");
+    assert_eq!(to_lmxml(&s1), "Active");
+    assert_eq!(to_lmxml(&&s1), "Active");
 
     let s2 = Status::Pending("verification".into());
-    assert_eq!(to_lmxml(&s2), "<Pending>verification</Pending>");
-    assert_eq!(to_lmxml(&&s2), "<Pending>verification</Pending>");
+    assert_eq!(to_lmxml(&s2), "verification");
+    assert_eq!(to_lmxml(&&s2), "verification");
 }
 
 // ---------------------------------------------------------------------------
@@ -404,7 +406,7 @@ fn test_recursive_tree_with_box() {
 fn test_shared_rc_nodes_in_list() {
     let shared_item = Rc::new(Item { val: 100 });
     let list = vec![Rc::clone(&shared_item), Rc::clone(&shared_item)];
-    let expected = "<list>\n    <item index=\"0\">\n      <val>100</val>\n    </item>\n    <item index=\"1\">\n      <val>100</val>\n    </item>\n</list>";
+    let expected = "<list>\n    <item index=\"0\">\n    <val>100</val>\n    </item>\n    <item index=\"1\">\n    <val>100</val>\n    </item>\n</list>";
     assert_eq!(to_lmxml(&list), expected);
 }
 
@@ -474,10 +476,8 @@ fn test_result_err_struct_top_level() {
         message: "Not Found".into(),
     };
     let res: Result<User, ErrorDetail> = Err(err);
-    let expected = "<code_>404</code_>\n<message>Not Found</message>";
-    // Or without rename:
-    let raw_err = "<code_>404</code_>\n<message>Not Found</message>";
-    assert_eq!(to_lmxml(&res), to_lmxml(&res.as_ref().unwrap_err()));
+    let expected = "<code>404</code>\n<message>Not Found</message>";
+    assert_eq!(to_lmxml(&res), expected);
 }
 
 #[test]

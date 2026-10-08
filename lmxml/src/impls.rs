@@ -4,9 +4,11 @@ use crate::__private::{
 };
 use crate::LMXMLSerializable;
 use std::borrow::Cow;
+use std::cell::{Cell, RefCell};
 use std::collections::{BTreeMap, HashMap};
+use std::pin::Pin;
 use std::rc::Rc;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex, RwLock};
 
 // ---------------------------------------------------------------------------
 // Boolean
@@ -159,7 +161,10 @@ impl LmxmlInternal for String {
 
 impl LMXMLSerializable for String {}
 
-impl<'a> LmxmlInternal for Cow<'a, str> {
+impl<'a, T> LmxmlInternal for Cow<'a, T>
+where
+    T: ?Sized + ToOwned + LMXMLSerializable,
+{
     fn serialize_lmxml(&self, lines: &mut Vec<String>, key: Option<&str>, indent: usize) {
         self.as_ref().serialize_lmxml(lines, key, indent);
     }
@@ -176,7 +181,7 @@ impl<'a> LmxmlInternal for Cow<'a, str> {
     }
 }
 
-impl<'a> LMXMLSerializable for Cow<'a, str> {}
+impl<'a, T> LMXMLSerializable for Cow<'a, T> where T: ?Sized + ToOwned + LMXMLSerializable {}
 
 // ---------------------------------------------------------------------------
 // Option
@@ -205,6 +210,34 @@ impl<T: LMXMLSerializable> LmxmlInternal for Option<T> {
 }
 
 impl<T: LMXMLSerializable> LMXMLSerializable for Option<T> {}
+
+// ---------------------------------------------------------------------------
+// Result
+// ---------------------------------------------------------------------------
+
+impl<T: LMXMLSerializable, E: LMXMLSerializable> LmxmlInternal for Result<T, E> {
+    fn serialize_lmxml(&self, lines: &mut Vec<String>, key: Option<&str>, indent: usize) {
+        match self {
+            Ok(val) => val.serialize_lmxml(lines, key, indent),
+            Err(err) => err.serialize_lmxml(lines, key, indent),
+        }
+    }
+
+    fn serialize_as_list_item(
+        &self,
+        lines: &mut Vec<String>,
+        index: usize,
+        indent: usize,
+        ind: usize,
+    ) {
+        match self {
+            Ok(val) => val.serialize_as_list_item(lines, index, indent, ind),
+            Err(err) => err.serialize_as_list_item(lines, index, indent, ind),
+        }
+    }
+}
+
+impl<T: LMXMLSerializable, E: LMXMLSerializable> LMXMLSerializable for Result<T, E> {}
 
 // ---------------------------------------------------------------------------
 // Slices, Vec, and Arrays
@@ -393,3 +426,111 @@ impl<T: ?Sized + LMXMLSerializable> LmxmlInternal for Arc<T> {
 }
 
 impl<T: ?Sized + LMXMLSerializable> LMXMLSerializable for Arc<T> {}
+
+impl<P> LmxmlInternal for Pin<P>
+where
+    P: std::ops::Deref,
+    P::Target: LMXMLSerializable,
+{
+    fn serialize_lmxml(&self, lines: &mut Vec<String>, key: Option<&str>, indent: usize) {
+        (**self).serialize_lmxml(lines, key, indent);
+    }
+
+    fn serialize_as_list_item(
+        &self,
+        lines: &mut Vec<String>,
+        index: usize,
+        indent: usize,
+        ind: usize,
+    ) {
+        (**self).serialize_as_list_item(lines, index, indent, ind);
+    }
+}
+
+impl<P> LMXMLSerializable for Pin<P>
+where
+    P: std::ops::Deref,
+    P::Target: LMXMLSerializable,
+{
+}
+
+// ---------------------------------------------------------------------------
+// Interior Mutability & Concurrency (Cell, RefCell, Mutex, RwLock)
+// ---------------------------------------------------------------------------
+
+impl<T: Copy + LMXMLSerializable> LmxmlInternal for Cell<T> {
+    fn serialize_lmxml(&self, lines: &mut Vec<String>, key: Option<&str>, indent: usize) {
+        self.get().serialize_lmxml(lines, key, indent);
+    }
+
+    fn serialize_as_list_item(
+        &self,
+        lines: &mut Vec<String>,
+        index: usize,
+        indent: usize,
+        ind: usize,
+    ) {
+        self.get().serialize_as_list_item(lines, index, indent, ind);
+    }
+}
+
+impl<T: Copy + LMXMLSerializable> LMXMLSerializable for Cell<T> {}
+
+impl<T: ?Sized + LMXMLSerializable> LmxmlInternal for RefCell<T> {
+    fn serialize_lmxml(&self, lines: &mut Vec<String>, key: Option<&str>, indent: usize) {
+        self.borrow().serialize_lmxml(lines, key, indent);
+    }
+
+    fn serialize_as_list_item(
+        &self,
+        lines: &mut Vec<String>,
+        index: usize,
+        indent: usize,
+        ind: usize,
+    ) {
+        self.borrow()
+            .serialize_as_list_item(lines, index, indent, ind);
+    }
+}
+
+impl<T: ?Sized + LMXMLSerializable> LMXMLSerializable for RefCell<T> {}
+
+impl<T: ?Sized + LMXMLSerializable> LmxmlInternal for Mutex<T> {
+    fn serialize_lmxml(&self, lines: &mut Vec<String>, key: Option<&str>, indent: usize) {
+        let guard = self.lock().unwrap_or_else(|p| p.into_inner());
+        guard.serialize_lmxml(lines, key, indent);
+    }
+
+    fn serialize_as_list_item(
+        &self,
+        lines: &mut Vec<String>,
+        index: usize,
+        indent: usize,
+        ind: usize,
+    ) {
+        let guard = self.lock().unwrap_or_else(|p| p.into_inner());
+        guard.serialize_as_list_item(lines, index, indent, ind);
+    }
+}
+
+impl<T: ?Sized + LMXMLSerializable> LMXMLSerializable for Mutex<T> {}
+
+impl<T: ?Sized + LMXMLSerializable> LmxmlInternal for RwLock<T> {
+    fn serialize_lmxml(&self, lines: &mut Vec<String>, key: Option<&str>, indent: usize) {
+        let guard = self.read().unwrap_or_else(|p| p.into_inner());
+        guard.serialize_lmxml(lines, key, indent);
+    }
+
+    fn serialize_as_list_item(
+        &self,
+        lines: &mut Vec<String>,
+        index: usize,
+        indent: usize,
+        ind: usize,
+    ) {
+        let guard = self.read().unwrap_or_else(|p| p.into_inner());
+        guard.serialize_as_list_item(lines, index, indent, ind);
+    }
+}
+
+impl<T: ?Sized + LMXMLSerializable> LMXMLSerializable for RwLock<T> {}
